@@ -17,8 +17,11 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 
+enum movieOrientation { NORMAL, ROTATE_LEFT, ROTATE_RIGHT, UPSIDE_DOWN };
+
 class CCGLMoviePlayer {
 public:
+    
     CCGLMoviePlayer();
     void loadMovie( NSURL *movieURL );
     void play( bool loop );
@@ -31,21 +34,20 @@ public:
     
     bool isLoaded;
     
+    movieOrientation orientation;
+    
 protected:
     
     gl::Texture mTex;
     
-//    vector<gl::Texture> mVideoFrames;
-    vector<Surface> mVideoFrames;
-    
     AVAssetReader *movieReader;
     
     void readMovie(NSURL *url);
-    void loadMovieFrames();
+    void loadMovieFrame();
     void addImageRef(CGImageRef *img);
     
     bool shouldPlay;
     bool shouldLoop;
-    int currentFrame;
-    float mFrameRate;
+//    int currentFrame;
+//    float mFrameRate;
 };

@@ -10,6 +10,7 @@
 
 CCGLMoviePlayer::CCGLMoviePlayer() {}
 
+
 void CCGLMoviePlayer::loadMovie( NSURL *movieURL ) {
     
     readMovie( movieURL );
@@ -18,6 +19,8 @@ void CCGLMoviePlayer::loadMovie( NSURL *movieURL ) {
     
     shouldLoop = NO;
     shouldPlay = NO;
+    
+    orientation = NORMAL;
 }
 
 void CCGLMoviePlayer::play(bool loop) {
@@ -45,45 +48,77 @@ void CCGLMoviePlayer::stop() {
     
     shouldPlay = NO;
     
-    currentFrame = 0;
+//    currentFrame = 0;
 }
 
 
 void CCGLMoviePlayer::draw( Area area ) {
+    
 	// this pair of lines is the standard way to clear the screen in OpenGL
-	gl::clear( Color( 0.9f, 0.9f, 0.9f ), true );
+	gl::clear( Color( 0.0f, 0.0f, 0.0f ), true );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
     if (shouldPlay) {
         
         if (!isLoaded) return;
         
-//        mTex = &mVideoFrames[currentFrame]; // Does not crash when beyond vector size
-        
-//        currentFrame++;
-//        if (currentFrame >= mVideoFrames.size()) {
-//            
-//            if (shouldLoop) currentFrame = 0;
-//    
-//            else return;
-//        }
-        
-        loadMovieFrames();
+        loadMovieFrame();
         
         if (mTex) {
+            
+            /** 
+             * Following Transform works for landscape video in portrait mode
+             **/
+            
+            // don't use gl::pushMatrices() if you're not adjusting the camera,
+            // use gl::pushModelView() instead. See point 4 of Common OpenGL Pitfalls
+            gl::pushModelView();
+            
+            switch (orientation) {
+                case NORMAL:
+                    
+                    break;
+                case ROTATE_LEFT:
+
+                    cout << "Rotate_left transform not working yet" << endl;
+//                    // now apply transformations in reverse order
+//                    gl::translate( -mTex.getHeight(), area.getHeight() );
+//                    gl::rotate( -90.0f );
+                    
+                    break;
+                case ROTATE_RIGHT:
+                    
+                    // now apply transformations in reverse order
+                    gl::translate( area.getWidth(), 0 );
+                    gl::rotate( 90.0f );
+                                        
+                    swap(area.x2, area.y2);
+
+                    break;
+                case UPSIDE_DOWN:
+                    cout << "Upside down transform not working yet" << endl;
+//                    gl::rotate( 180.0f );
+
+                    break;
+                    
+                default:
+                    break;
+            }
             
             Area sourceBounds = Area( 0, 0, mTex.getWidth(), mTex.getHeight() );
             Area destinationBounds = Area::proportionalFit( sourceBounds, area,
                                                            true, true );
             
             gl::draw( mTex, sourceBounds, destinationBounds );
+    
+            // restore modelview matrix
+            gl::popModelView();
         }
     }
 }
 
 void CCGLMoviePlayer::close() {
     
-    mVideoFrames.clear();
     movieReader= nil;
 }
 
@@ -126,31 +161,24 @@ void CCGLMoviePlayer::readMovie(NSURL *url)
                                                          assetReaderTrackOutputWithTrack:videoTrack
                                                          outputSettings:videoSettings]];
                                 [movieReader startReading];
-                                
-                                // NOTE(Ragnar): Before this called to load all frames into vector<gl::Texture>
-                                // Load movie frames was a while loop
-                                //loadMovieFrames();
                             }
                         });
          
-         // Allow to buffer a little bit before playing?
-//         usleep(1000000);
-         
          isLoaded = YES;
          
-         cout << "movie reader started reading" << endl;
+//         cout << "movie reader started reading" << endl;
      }];
 }
 
-void CCGLMoviePlayer::loadMovieFrames()
+void CCGLMoviePlayer::loadMovieFrame()
 {
     
     // while loop to load all frames into vector
     if (movieReader.status == AVAssetReaderStatusReading)
     {
-//        cout << "loadframe" << endl;
         
         AVAssetReaderTrackOutput * output = [movieReader.outputs objectAtIndex:0];
+        
         CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
         if (sampleBuffer)
         {
@@ -187,26 +215,28 @@ void CCGLMoviePlayer::loadMovieFrames()
                 CFRelease(sampleBuffer);
             }
         }
-        
-        // NOTE(Ragnar): Call itself if in while loop
-        //loadMovieFrames();
     }
-    
-    /* if in while loop set as loaded when finished */
-//    movieReader = nil;
-//    isLoaded = YES;
 }
 
 
 void CCGLMoviePlayer::addImageRef(CGImageRef *img)
 {
 	if ( !img ) throw ImageIoExceptionFailedLoad();
-    
+
+    // turn CGImageRef into texture
     mTex = gl::Texture( cinder::cocoa::createImageSource( *img ) );
-    
-//    Surface temp2( temp  );
-////    gl::Texture temp = gl::Texture( cinder::cocoa::createImageSource( *img ) );
-//    
-//    // turn CGImageRef into texture
-//    mVideoFrames.push_back( temp );
 }
+
+
+//swap returns void, and takes in two variables as a reference.
+static void swap( int &a, int &b )
+{
+    int tmp; //Create a tmp int variable for storage
+    
+    tmp = a;
+    a = b;
+    b = tmp;
+    
+    return;
+}
+
