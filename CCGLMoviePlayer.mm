@@ -67,7 +67,7 @@ void CCGLMoviePlayer::draw( Area area ) {
         if (mTex) {
             
             /** 
-             * Following Transform works for landscape video in portrait mode
+             * Following Transform works for landscape video in iOS portrait mode
              **/
             
             // don't use gl::pushMatrices() if you're not adjusting the camera,
@@ -173,7 +173,6 @@ void CCGLMoviePlayer::readMovie(NSURL *url)
 void CCGLMoviePlayer::loadMovieFrame()
 {
     
-    // while loop to load all frames into vector
     if (movieReader.status == AVAssetReaderStatusReading)
     {
         
